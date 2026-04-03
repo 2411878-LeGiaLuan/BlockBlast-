@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast LG v2.1</title>
+    <title>Block Blast LG v2.2</title>
     <style>
         :root {
             --bg: #0f172a; --grid: #1e293b; --cell: #334155;
@@ -16,28 +16,37 @@
             height: 100vh; display: flex; flex-direction: column; align-items: center; 
         }
         #header { padding: 40px 20px 10px; text-align: center; }
-        #score-val { font-size: 40px; font-weight: 800; color: #fbbf24; }
+        #score-val { font-size: 44px; font-weight: 800; color: #fbbf24; text-shadow: 0 0 15px rgba(251,191,36,0.3); }
+        
         #game-board { 
             display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
-            padding: 6px; background: var(--grid); border-radius: 12px;
-            width: 90vw; max-width: 380px; aspect-ratio: 1;
+            padding: 8px; background: var(--grid); border-radius: 12px;
+            width: 90vw; max-width: 400px; aspect-ratio: 1;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
-        .cell { background: var(--cell); border-radius: 4px; transition: 0.2s; }
-        .cell.filled { transform: scale(0.95); }
+        .cell { background: var(--cell); border-radius: 4px; transition: background 0.2s; }
+        .cell.highlight { background: rgba(255,255,255,0.2); }
+
         #stash { 
             display: flex; justify-content: space-around; align-items: center;
-            width: 100%; max-width: 400px; height: 160px; margin-top: auto; padding-bottom: 20px;
+            width: 100%; max-width: 400px; height: 160px; margin-top: auto; padding-bottom: 30px;
         }
-        .stash-item { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
-        .shape-container { display: grid; transform: scale(0.6); }
-        .block-unit { width: 25px; height: 25px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }
-        .dragging { transform: scale(1.2) !important; opacity: 0.7; position: fixed; pointer-events: none; z-index: 1000; }
+        .stash-item { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border-radius: 15px; }
+        
+        .shape-container { display: grid; transform: scale(0.6); cursor: grab; position: relative; }
+        .block-unit { width: 30px; height: 30px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 0 10px rgba(255,255,255,0.2); }
+        
+        .dragging { 
+            transform: scale(1) !important; 
+            opacity: 0.9; position: fixed; pointer-events: none; z-index: 1000; 
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+        }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <div style="font-size: 14px; opacity: 0.6;">SCORE</div>
+        <div style="font-size: 14px; opacity: 0.6; letter-spacing: 2px;">BEST SCORE</div>
         <div id="score-val">0</div>
     </div>
 
@@ -81,7 +90,7 @@
     function createShape(shapeData) {
         const container = document.createElement('div');
         container.className = 'shape-container';
-        container.style.gridTemplateColumns = `repeat(${shapeData.data[0].length}, 25px)`;
+        container.style.gridTemplateColumns = `repeat(${shapeData.data[0].length}, 30px)`;
         container.dataset.info = JSON.stringify(shapeData);
 
         shapeData.data.forEach(row => {
@@ -92,48 +101,49 @@
             });
         });
 
-        container.ontouchstart = (e) => startDrag(e, container);
+        // Hỗ trợ cả Chuột và Cảm ứng
+        container.onmousedown = (e) => startDrag(e, container);
+        container.ontouchstart = (e) => startDrag(e.touches[0], container);
+        
         return container;
-    }
-
-    function spawnNewShapes() {
-        [1,2,3].forEach(i => {
-            const slot = document.getElementById('s' + i);
-            slot.innerHTML = '';
-            slot.appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
-        });
     }
 
     let activeDrag = null;
     function startDrag(e, el) {
-        const touch = e.touches[0];
+        const rect = el.getBoundingClientRect();
         activeDrag = {
             el: el,
             info: JSON.parse(el.dataset.info),
-            offsetX: 40, offsetY: 80 // Nhấc khối lên trên ngón tay
+            offsetX: 45, 
+            offsetY: 45
         };
         el.classList.add('dragging');
-        moveDrag(touch);
+        updateDragPos(e);
     }
 
-    document.ontouchmove = (e) => { if(activeDrag) moveDrag(e.touches[0]); };
-    
-    function moveDrag(touch) {
-        activeDrag.el.style.left = (touch.clientX - activeDrag.offsetX) + 'px';
-        activeDrag.el.style.top = (touch.clientY - activeDrag.offsetY) + 'px';
-    }
-
-    document.ontouchend = (e) => {
+    function updateDragPos(e) {
         if(!activeDrag) return;
-        const touch = e.changedTouches[0];
+        activeDrag.el.style.left = (e.clientX - activeDrag.offsetX) + 'px';
+        activeDrag.el.style.top = (e.clientY - activeDrag.offsetY - 50) + 'px';
+    }
+
+    // Sự kiện toàn cục cho di chuyển và thả
+    window.onmousemove = (e) => { if(activeDrag) updateDragPos(e); };
+    window.ontouchmove = (e) => { if(activeDrag) updateDragPos(e.touches[0]); };
+
+    window.onmouseup = window.ontouchend = (e) => {
+        if(!activeDrag) return;
+        const pointer = e.changedTouches ? e.changedTouches[0] : e;
         activeDrag.el.classList.remove('dragging');
         activeDrag.el.style.position = 'relative';
         activeDrag.el.style.left = '0'; activeDrag.el.style.top = '0';
 
-        const target = document.elementFromPoint(touch.clientX, touch.clientY - 60);
-        if(target && target.className === 'cell') {
+        // Tìm ô dưới vị trí thả
+        const target = document.elementFromPoint(pointer.clientX, pointer.clientY - 50);
+        if(target && target.className.includes('cell')) {
             const idx = Array.from(board.children).indexOf(target);
             const r = Math.floor(idx/8), c = idx%8;
+            
             if(canPlace(activeDrag.info.data, r, c)) {
                 place(activeDrag.info, r, c);
                 activeDrag.el.parentElement.innerHTML = '';
@@ -161,7 +171,7 @@
                 if(v) {
                     gridData[r+i][c+j] = info.color;
                     cells[r+i][c+j].style.background = info.color;
-                    cells[r+i][c+j].classList.add('filled');
+                    cells[r+i][c+j].style.boxShadow = 'inset 0 0 10px rgba(255,255,255,0.3)';
                 }
             });
         });
@@ -173,20 +183,29 @@
         let rB = [], cB = [];
         for(let i=0; i<8; i++) {
             if(gridData[i].every(v => v)) rB.push(i);
-            if(gridData.every(row => row[i])) cB.push(i);
+            let fullCol = true;
+            for(let j=0; j<8; j++) if(!gridData[j][i]) fullCol = false;
+            if(fullCol) cB.push(i);
         }
         rB.forEach(r => { for(let j=0; j<8; j++) clear(r,j); });
         cB.forEach(c => { for(let i=0; i<8; i++) clear(i,c); });
         if(rB.length || cB.length) score += 100 * (rB.length + cB.length);
+        document.getElementById('score-val').innerText = score;
     }
 
     function clear(r, c) {
         gridData[r][c] = null;
         cells[r][c].style.background = '';
-        cells[r][c].classList.remove('filled');
+        cells[r][c].style.boxShadow = '';
     }
 
-    // Tự động chạy ngay khi load trang
+    function spawnNewShapes() {
+        [1,2,3].forEach(i => {
+            const slot = document.getElementById('s' + i);
+            slot.appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
+        });
+    }
+
     init();
 </script>
 </body>
