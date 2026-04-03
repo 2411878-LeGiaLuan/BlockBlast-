@@ -3,65 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast LG v2.0</title>
+    <title>Block Blast LG v2.1</title>
     <style>
         :root {
             --bg: #0f172a; --grid: #1e293b; --cell: #334155;
             --c1: #ef4444; --c2: #3b82f6; --c3: #10b981; --c4: #f59e0b; --c5: #8b5cf6;
         }
-        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; touch-action: none; user-select: none; }
         body { 
-            margin: 0; padding: 0; background: var(--bg); 
-            font-family: sans-serif; color: white; 
+            margin: 0; padding: 0; background: var(--bg); color: white; 
+            font-family: system-ui, -apple-system, sans-serif;
             height: 100vh; display: flex; flex-direction: column; align-items: center; 
         }
-
-        /* SCORE */
-        #header { width: 100%; padding: 40px 20px 10px; text-align: center; }
+        #header { padding: 40px 20px 10px; text-align: center; }
         #score-val { font-size: 40px; font-weight: 800; color: #fbbf24; }
-        
-        /* GRID */
         #game-board { 
             display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
             padding: 6px; background: var(--grid); border-radius: 12px;
-            width: 92vw; max-width: 380px; aspect-ratio: 1; margin-top: 10px;
+            width: 90vw; max-width: 380px; aspect-ratio: 1;
         }
-        .cell { background: var(--cell); border-radius: 4px; position: relative; }
-        .cell.filled { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: scale(1); }
-
-        /* STASH (KHO) */
+        .cell { background: var(--cell); border-radius: 4px; transition: 0.2s; }
+        .cell.filled { transform: scale(0.95); }
         #stash { 
             display: flex; justify-content: space-around; align-items: center;
             width: 100%; max-width: 400px; height: 160px; margin-top: auto; padding-bottom: 20px;
         }
         .stash-item { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
-
-        /* SHAPES */
-        .shape-container { display: grid; transform: scale(0.65); transition: transform 0.2s; }
-        .block-unit { width: 25px; height: 25px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); box-shadow: inset 0 0 8px rgba(255,255,255,0.2); }
-        .dragging { transform: scale(1.1) !important; opacity: 0.8; z-index: 1000; pointer-events: none; }
-
-        /* BLAST EFFECT */
-        @keyframes blast {
-            0% { transform: scale(1); opacity: 1; filter: brightness(2); }
-            100% { transform: scale(0); opacity: 0; }
-        }
-        .blasting { animation: blast 0.5s ease-out forwards; }
-
-        #game-over {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
-        }
+        .shape-container { display: grid; transform: scale(0.6); }
+        .block-unit { width: 25px; height: 25px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }
+        .dragging { transform: scale(1.2) !important; opacity: 0.7; position: fixed; pointer-events: none; z-index: 1000; }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <div style="font-size: 14px; opacity: 0.7;">SCORE</div>
+        <div style="font-size: 14px; opacity: 0.6;">SCORE</div>
         <div id="score-val">0</div>
     </div>
 
     <div id="game-board"></div>
 
     <div id="stash">
-        <div class="stash-item" id="s
+        <div class="stash-item" id="s1"></div>
+        <div class="stash-item" id="s2"></div>
+        <div class="stash-item" id="s3"></div>
+    </div>
+
+<script>
+    const GRID_SIZE = 8;
+    const board = document.getElementById('game-board');
+    let score = 0;
+    let gridData = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
+    let cells = [];
+
+    const SHAPES = [
+        { data: [[1,1],[1,1]], color: 'var(--c1)' },
+        { data: [[1,1,1,1]], color: 'var(--c2)' },
+        { data: [[1,1,1],[0,1,0]], color: 'var(--c3)' },
+        { data: [[1,1],[1,0]], color: 'var(--c4)' },
+        { data: [[1,1,1],[1,0,0]], color: 'var(--c5)' }
+    ];
+
+    function init() {
+        board.innerHTML = '';
+        for (let r = 0; r < GRID_SIZE; r++) {
+            cells[r] = [];
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const el = document.createElement('div');
+                el.className = 'cell';
+                board.appendChild(el);
+                cells[r][c] = el;
+            }
+        }
+        spawnNewShapes();
+    }
+
+    function createShape(shapeData) {
+        const container = document.createElement('div');
+        container.className = 'shape-container';
+        container.style.gridTemplateColumns = `repeat(${shapeData.data[0].length}, 25px)`;
+        container.dataset.info = JSON.stringify(shapeData);
+
+        shapeData.data.forEach(row => {
+            row.forEach(v => {
+                const b = document.createElement('div');
+                if(v) { b.className = 'block-unit'; b.style.background = shapeData.color; }
+                container.appendChild(b);
+            });
+        });
+
+        container.ontouchstart = (e) => startDrag(e, container);
+        return container;
+    }
+
+    function spawnNewShapes() {
+        [1,2,3].forEach(i => {
+            const slot = document.getElementById('s' + i);
+            slot.innerHTML = '';
+            slot.appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
+        });
+    }
+
+    let activeDrag = null;
+    function startDrag(e, el) {
+        const touch = e.touches[0];
+        activeDrag = {
+            el: el,
+            info: JSON.parse(el.dataset.info),
+            offsetX: 40, offsetY: 80 // Nhấc khối lên trên ngón tay
+        };
+        el.classList.add('dragging');
+        moveDrag(touch);
+    }
+
+    document.ontouchmove = (e) => { if(activeDrag) moveDrag(e.touches[0]); };
+    
+    function moveDrag(touch) {
+        activeDrag.el.style.left = (touch.clientX - activeDrag.offsetX) + 'px';
+        activeDrag.el.style.top = (touch.clientY - activeDrag.offsetY) + 'px';
+    }
+
+    document.ontouchend = (e) => {
+        if(!activeDrag) return;
+        const touch = e.changedTouches[0];
+        activeDrag.el.classList.remove('dragging');
+        activeDrag.el.style.position = 'relative';
+        activeDrag.el.style.left = '0'; activeDrag.el.style.top = '0';
+
+        const target = document.elementFromPoint(touch.clientX, touch.clientY - 60);
+        if(target && target.className === 'cell') {
+            const idx = Array.from(board.children).indexOf(target);
+            const r = Math.floor(idx/8), c = idx%8;
+            if(canPlace(activeDrag.info.data, r, c)) {
+                place(activeDrag.info, r, c);
+                activeDrag.el.parentElement.innerHTML = '';
+                checkLines();
+                if(!document.querySelectorAll('.shape-container').length) spawnNewShapes();
+            }
+        }
+        activeDrag = null;
+    };
+
+    function canPlace(shape, r, c) {
+        for(let i=0; i<shape.length; i++) {
+            for(let j=0; j<shape[i].length; j++) {
+                if(shape[i][j]) {
+                    if(r+i >= 8 || c+j >= 8 || gridData[r+i][c+j]) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function place(info, r, c) {
+        info.data.forEach((row, i) => {
+            row.forEach((v, j) => {
+                if(v) {
+                    gridData[r+i][c+j] = info.color;
+                    cells[r+i][c+j].style.background = info.color;
+                    cells[r+i][c+j].classList.add('filled');
+                }
+            });
+        });
+        score += 10;
+        document.getElementById('score-val').innerText = score;
+    }
+
+    function checkLines() {
+        let rB = [], cB = [];
+        for(let i=0; i<8; i++) {
+            if(gridData[i].every(v => v)) rB.push(i);
+            if(gridData.every(row => row[i])) cB.push(i);
+        }
+        rB.forEach(r => { for(let j=0; j<8; j++) clear(r,j); });
+        cB.forEach(c => { for(let i=0; i<8; i++) clear(i,c); });
+        if(rB.length || cB.length) score += 100 * (rB.length + cB.length);
+    }
+
+    function clear(r, c) {
+        gridData[r][c] = null;
+        cells[r][c].style.background = '';
+        cells[r][c].classList.remove('filled');
+    }
+
+    // Tự động chạy ngay khi load trang
+    init();
+</script>
+</body>
+</html>
