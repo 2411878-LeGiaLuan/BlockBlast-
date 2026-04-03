@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LGBank Block Blast v4.0 - ULTIMATE</title>
+    <title>LGBank Block Blast v4.1</title>
     <style>
         :root {
             --bg: #050a18; --grid: #131c31; --cell: rgba(255,255,255,0.02);
@@ -11,67 +11,49 @@
         }
         * { box-sizing: border-box; touch-action: none; user-select: none; margin: 0; padding: 0; }
         body { 
-            background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg); color: white; font-family: system-ui, -apple-system, sans-serif;
             height: 100vh; display: flex; flex-direction: column; align-items: center; overflow: hidden;
         }
 
-        /* UI HEADER */
         #header { padding: 30px 20px 10px; text-align: center; width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .score-box { flex: 1; }
-        #score-label { font-size: 10px; opacity: 0.5; letter-spacing: 2px; }
-        #score-val { font-size: 42px; font-weight: 900; color: #fff; }
-        #high-score { font-size: 14px; color: #fbbf24; opacity: 0.8; }
+        #score-val { font-size: 42px; font-weight: 900; }
+        #high-score { font-size: 14px; color: #fbbf24; }
 
-        /* BOARD */
         #game-board { 
             display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; 
             padding: 12px; background: var(--grid); border-radius: 20px;
-            width: 94vw; max-width: 400px; aspect-ratio: 1;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,255,255,0.05);
-            position: relative;
+            width: 94vw; max-width: 400px; aspect-ratio: 1; position: relative;
         }
-        .cell { background: var(--cell); border-radius: 6px; position: relative; overflow: hidden; }
-        .cell.hint { animation: hintPulse 1.5s infinite; }
-        @keyframes hintPulse { 0%, 100% { background: var(--cell); } 50% { background: rgba(255,255,255,0.1); } }
+        .cell { background: var(--cell); border-radius: 6px; position: relative; }
+        .cell.hint { background: rgba(255,255,255,0.1) !important; }
 
-        /* STASH */
-        #stash { 
-            display: flex; justify-content: space-around; width: 100%; max-width: 420px; 
-            height: 140px; margin-top: auto; padding-bottom: 20px;
+        #stash { display: flex; justify-content: space-around; width: 100%; max-width: 420px; height: 140px; margin-top: auto; padding-bottom: 20px; }
+        .stash-item { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+
+        .shape-container { display: grid; cursor: grab; position: relative; transform: scale(0.8); }
+        .block-unit { width: 32px; height: 32px; border-radius: 7px; border: 1px solid rgba(0,0,0,0.2); }
+
+        /* LỚP PHỦ KHI KÉO - ĐẢM BẢO CHUẨN XÁC */
+        .dragging { 
+            transform: scale(1) !important; 
+            position: fixed !important; 
+            pointer-events: none; 
+            z-index: 9999; 
+            filter: brightness(1.1);
         }
-        .stash-item { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; transform: scale(0.85); transition: 0.3s; }
 
-        /* SHAPES */
-        .shape-container { display: grid; cursor: grab; position: relative; }
-        .block-unit { width: 32px; height: 32px; border-radius: 7px; border: 1px solid rgba(0,0,0,0.2); position: relative; }
-        .block-unit::before { content: ''; position: absolute; top: 15%; left: 15%; width: 30%; height: 20%; background: rgba(255,255,255,0.2); border-radius: 10px; }
-
-        .dragging { transform: scale(1.1) !important; position: fixed !important; pointer-events: none; z-index: 1000; filter: brightness(1.2) drop-shadow(0 0 20px rgba(0,0,0,0.5)); }
-
-        /* PARTICLES */
-        .particle { position: absolute; pointer-events: none; border-radius: 50%; animation: particleFly 0.6s ease-out forwards; }
-        @keyframes particleFly { 0% { transform: scale(1); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; } }
-
-        #combo-text { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; font-weight: 900; color: #ff3e3e; pointer-events: none; z-index: 100; text-shadow: 0 0 20px rgba(255,0,0,0.5); display: none; }
+        .particle { position: absolute; pointer-events: none; border-radius: 2px; animation: pFly 0.5s ease-out forwards; }
+        @keyframes pFly { 100% { transform: translate(var(--x), var(--y)) rotate(180deg); opacity: 0; } }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <div class="score-box" style="text-align: left;">
-            <div id="score-label">BEST</div>
-            <div id="high-score">0</div>
-        </div>
-        <div class="score-box">
-            <div id="score-label">SCORE</div>
-            <div id="score-val">0</div>
-        </div>
+        <div style="text-align: left;"><div style="font-size: 10px; opacity: 0.5;">BEST</div><div id="high-score">0</div></div>
+        <div><div style="font-size: 10px; opacity: 0.5;">SCORE</div><div id="score-val">0</div></div>
     </div>
 
-    <div id="game-board">
-        <div id="combo-text">COMBO!</div>
-    </div>
+    <div id="game-board"></div>
 
     <div id="stash">
         <div class="stash-item" id="s1"></div>
@@ -83,11 +65,10 @@
     const GRID_SIZE = 8;
     const board = document.getElementById('game-board');
     let score = 0;
-    let highScore = localStorage.getItem('blockBlast_highScore') || 0;
+    let highScore = localStorage.getItem('LGBank_HS') || 0;
     let gridData = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
     let cells = [];
-    let isTouch = 'ontouchstart' in window;
-    let lastMoveTime = Date.now();
+    let lastMove = Date.now();
 
     document.getElementById('high-score').innerText = highScore;
 
@@ -95,12 +76,12 @@
         { data: [[1,1],[1,1]], color: 'var(--c1)' },
         { data: [[1,1,1,1]], color: 'var(--c2)' },
         { data: [[1,1,1],[0,1,0]], color: 'var(--c3)' },
-        { data: [[1,1],[1,1],[1,1]], color: 'var(--c4)' },
-        { data: [[1,1,1],[1,0,0]], color: 'var(--c5)' },
-        { data: [[1,1,0],[0,1,1]], color: '#ff5e57' }
+        { data: [[1,1,0],[0,1,1]], color: 'var(--c5)' },
+        { data: [[1,1,1],[1,0,0]], color: 'var(--c4)' }
     ];
 
     function init() {
+        board.innerHTML = '';
         for (let r = 0; r < GRID_SIZE; r++) {
             cells[r] = [];
             for (let c = 0; c < GRID_SIZE; c++) {
@@ -110,163 +91,149 @@
                 cells[r][c] = el;
             }
         }
-        spawnNewShapes();
-        setInterval(checkHint, 5000); // Gợi ý mỗi 5s nếu không hoạt động
+        spawn();
+        setInterval(showHint, 4000);
     }
 
     function createShape(info) {
-        const container = document.createElement('div');
-        container.className = 'shape-container';
-        container.style.gridTemplateColumns = `repeat(${info.data[0].length}, 32px)`;
-        container.dataset.info = JSON.stringify(info);
+        const div = document.createElement('div');
+        div.className = 'shape-container';
+        div.style.gridTemplateColumns = `repeat(${info.data[0].length}, 32px)`;
+        div.dataset.info = JSON.stringify(info);
 
         info.data.forEach(row => {
             row.forEach(v => {
                 const b = document.createElement('div');
-                if(v) { b.className = 'block-unit'; b.style.background = info.color; b.style.boxShadow = `0 4px 0 ${info.color}aa, inset 0 0 10px rgba(255,255,255,0.2)`; }
-                container.appendChild(b);
+                if(v) { b.className = 'block-unit'; b.style.background = info.color; }
+                div.appendChild(b);
             });
         });
 
-        container.onmousedown = (e) => startDrag(e, container);
-        container.ontouchstart = (e) => startDrag(e.touches[0], container);
-        return container;
+        div.onmousedown = (e) => startDrag(e, div);
+        div.ontouchstart = (e) => startDrag(e.touches[0], div);
+        return div;
     }
 
-    let activeDrag = null;
+    let drag = null;
     function startDrag(e, el) {
-        lastMoveTime = Date.now();
+        lastMove = Date.now();
         clearHints();
         const rect = el.getBoundingClientRect();
-        activeDrag = {
+        
+        // Cố định vị trí bám: Luôn bám vào ô đầu tiên của khối
+        drag = {
             el: el,
             info: JSON.parse(el.dataset.info),
-            offsetX: (el.offsetWidth) / 2,
-            offsetY: isTouch ? 80 : (el.offsetHeight / 2)
+            offsetX: 16, // Một nửa chiều rộng ô (32/2)
+            offsetY: ('ontouchstart' in window) ? 70 : 16 // iPhone nhấc cao, Laptop bám tâm ô đầu
         };
+        
         el.classList.add('dragging');
-        updatePos(e);
+        updateDrag(e);
     }
 
-    function updatePos(e) {
-        if(!activeDrag) return;
-        activeDrag.el.style.left = (e.clientX - activeDrag.offsetX) + 'px';
-        activeDrag.el.style.top = (e.clientY - activeDrag.offsetY) + 'px';
+    function updateDrag(e) {
+        if(!drag) return;
+        drag.el.style.left = (e.clientX - drag.offsetX) + 'px';
+        drag.el.style.top = (e.clientY - drag.offsetY) + 'px';
     }
 
-    window.onmousemove = (e) => { if(activeDrag) updatePos(e); };
-    window.ontouchmove = (e) => { if(activeDrag) updatePos(e.touches[0]); };
+    window.onmousemove = (e) => updateDrag(e);
+    window.ontouchmove = (e) => updateDrag(e.touches[0]);
 
     window.onmouseup = window.ontouchend = (e) => {
-        if(!activeDrag) return;
+        if(!drag) return;
         const p = e.changedTouches ? e.changedTouches[0] : e;
-        const target = document.elementFromPoint(p.clientX, p.clientY - (isTouch ? 60 : 0));
+        const target = document.elementFromPoint(p.clientX, p.clientY - (('ontouchstart' in window) ? 50 : 0));
         
         if(target && target.className.includes('cell')) {
             const idx = Array.from(board.children).indexOf(target);
             const r = Math.floor(idx/8), c = idx%8;
-            if(canPlace(activeDrag.info.data, r, c)) {
-                place(activeDrag.info, r, c);
-                activeDrag.el.remove();
-                checkLines();
-                if(document.querySelectorAll('.shape-container').length === 0) spawnNewShapes();
+            if(canPlace(drag.info.data, r, c)) {
+                doPlace(drag.info, r, c);
+                drag.el.remove();
+                checkClear();
+                if(!document.querySelector('.shape-container')) spawn();
             }
         }
         
-        activeDrag.el.classList.remove('dragging');
-        activeDrag.el.style.position = 'relative';
-        activeDrag.el.style.left = '0'; activeDrag.el.style.top = '0';
-        activeDrag = null;
+        drag.el.classList.remove('dragging');
+        drag.el.style.position = 'relative';
+        drag.el.style.left = '0'; drag.el.style.top = '0';
+        drag = null;
     };
 
     function canPlace(data, r, c) {
         for(let i=0; i<data.length; i++) {
             for(let j=0; j<data[i].length; j++) {
-                if(data[i][j]) {
-                    if(r+i >= 8 || c+j >= 8 || gridData[r+i][c+j]) return false;
-                }
+                if(data[i][j] && (r+i >= 8 || c+j >= 8 || gridData[r+i][c+j])) return false;
             }
         }
         return true;
     }
 
-    function place(info, r, c) {
+    function doPlace(info, r, c) {
         info.data.forEach((row, i) => {
             row.forEach((v, j) => {
                 if(v) {
                     gridData[r+i][c+j] = info.color;
                     cells[r+i][c+j].style.background = info.color;
-                    cells[r+i][c+j].style.boxShadow = `inset 0 0 15px rgba(255,255,255,0.3)`;
+                    cells[r+i][c+j].style.boxShadow = 'inset 0 0 10px rgba(255,255,255,0.3)';
                 }
             });
         });
-        // Không cộng điểm khi đặt vào (theo yêu cầu)
     }
 
-    function checkLines() {
-        let rB = [], cB = [];
+    function checkClear() {
+        let rs = [], cs = [];
         for(let i=0; i<8; i++) {
-            if(gridData[i].every(v => v)) rB.push(i);
-            let colFull = true;
-            for(let j=0; j<8; j++) if(!gridData[j][i]) colFull = false;
-            if(colFull) cB.push(i);
+            if(gridData[i].every(v => v)) rs.push(i);
+            if(gridData.every(row => row[i])) cs.push(i);
         }
-
-        if(rB.length + cB.length > 0) {
-            rB.forEach(r => { for(let j=0; j<8; j++) createParticles(r,j); });
-            cB.forEach(c => { for(let i=0; i<8; i++) createParticles(i,c); });
+        
+        if(rs.length + cs.length > 0) {
+            rs.forEach(r => { for(let j=0; j<8; j++) explode(r, j); });
+            cs.forEach(c => { for(let i=0; i<8; i++) explode(i, c); });
             
-            const points = (rB.length + cB.length) * 100 * (rB.length + cB.length);
-            updateScore(points);
-            if(rB.length + cB.length > 1) showCombo();
+            const p = (rs.length + cs.length) * 100;
+            score += p;
+            document.getElementById('score-val').innerText = score;
+            if(score > highScore) {
+                highScore = score;
+                localStorage.setItem('LGBank_HS', highScore);
+                document.getElementById('high-score').innerText = highScore;
+            }
         }
     }
 
-    function createParticles(r, c) {
+    function explode(r, c) {
         const color = gridData[r][c];
         gridData[r][c] = null;
         const cell = cells[r][c];
-        
-        for(let i=0; i<6; i++) {
+        for(let i=0; i<5; i++) {
             const p = document.createElement('div');
-            p.className = 'particle';
-            p.style.background = color;
-            p.style.width = p.style.height = Math.random() * 8 + 4 + 'px';
-            p.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
-            p.style.setProperty('--y', (Math.random() - 0.5) * 100 + 'px');
+            p.className = 'particle'; p.style.background = color;
+            p.style.width = p.style.height = '6px';
+            p.style.setProperty('--x', (Math.random()-0.5)*80+'px');
+            p.style.setProperty('--y', (Math.random()-0.5)*80+'px');
             cell.appendChild(p);
         }
-        setTimeout(() => { cell.style.background = ''; cell.style.boxShadow = ''; cell.innerHTML = ''; }, 400);
+        setTimeout(() => { cell.style.background = ''; cell.innerHTML = ''; }, 400);
     }
 
-    function updateScore(pts) {
-        score += pts;
-        document.getElementById('score-val').innerText = score;
-        if(score > highScore) {
-            highScore = score;
-            localStorage.setItem('blockBlast_highScore', highScore);
-            document.getElementById('high-score').innerText = highScore;
-        }
+    function spawn() {
+        [1,2,3].forEach(i => document.getElementById('s'+i).appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)])));
     }
 
-    function spawnNewShapes() {
-        [1,2,3].forEach(i => {
-            const slot = document.getElementById('s' + i);
-            slot.appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
-        });
-    }
-
-    function checkHint() {
-        if(Date.now() - lastMoveTime < 5000 || activeDrag) return;
-        const containers = document.querySelectorAll('.shape-container');
-        if(containers.length === 0) return;
-        const data = JSON.parse(containers[0].dataset.info).data;
+    function showHint() {
+        if(Date.now() - lastMove < 4000 || drag) return;
+        const s = document.querySelector('.shape-container');
+        if(!s) return;
+        const data = JSON.parse(s.dataset.info).data;
         for(let r=0; r<8; r++) {
             for(let c=0; c<8; c++) {
                 if(canPlace(data, r, c)) {
-                    data.forEach((row, i) => row.forEach((v, j) => {
-                        if(v) cells[r+i][c+j].classList.add('hint');
-                    }));
+                    data.forEach((row, i) => row.forEach((v, j) => { if(v) cells[r+i][c+j].classList.add('hint'); }));
                     return;
                 }
             }
@@ -274,11 +241,6 @@
     }
 
     function clearHints() { cells.flat().forEach(c => c.classList.remove('hint')); }
-    function showCombo() { 
-        const ct = document.getElementById('combo-text');
-        ct.style.display = 'block';
-        setTimeout(() => ct.style.display = 'none', 800);
-    }
 
     init();
 </script>
