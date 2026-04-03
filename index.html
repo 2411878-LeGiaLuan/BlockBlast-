@@ -3,57 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LGBank Block Blast v4.1</title>
+    <title>LGBank Block Blast v5.0 - Definitive</title>
     <style>
         :root {
-            --bg: #050a18; --grid: #131c31; --cell: rgba(255,255,255,0.02);
-            --c1: #ff4d4d; --c2: #00d2ff; --c3: #32ff7e; --c4: #ffaf40; --c5: #7d5fff;
+            --bg: #040812; --grid: #1a233a; --cell: #252f48;
+            --c1: #ff3b3b; --c2: #0099ff; --c3: #00f281; --c4: #ffcc00; --c5: #af52ff;
         }
         * { box-sizing: border-box; touch-action: none; user-select: none; margin: 0; padding: 0; }
         body { 
-            background: var(--bg); color: white; font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg); color: white; font-family: 'Segoe UI', system-ui, sans-serif;
             height: 100vh; display: flex; flex-direction: column; align-items: center; overflow: hidden;
         }
 
-        #header { padding: 30px 20px 10px; text-align: center; width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: flex-end; }
-        #score-val { font-size: 42px; font-weight: 900; }
-        #high-score { font-size: 14px; color: #fbbf24; }
+        /* HEADER & SCORE */
+        #header { padding: 40px 20px 10px; text-align: center; width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; }
+        .score-item { display: flex; flex-direction: column; }
+        .label { font-size: 10px; opacity: 0.6; letter-spacing: 2px; text-transform: uppercase; }
+        #score-val { font-size: 40px; font-weight: 900; color: #fff; }
+        #high-val { font-size: 18px; color: #fbbf24; font-weight: 700; }
 
+        /* GRID */
         #game-board { 
-            display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; 
+            display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; 
             padding: 12px; background: var(--grid); border-radius: 20px;
             width: 94vw; max-width: 400px; aspect-ratio: 1; position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
         }
-        .cell { background: var(--cell); border-radius: 6px; position: relative; }
-        .cell.hint { background: rgba(255,255,255,0.1) !important; }
+        .cell { background: var(--cell); border-radius: 6px; transition: 0.15s; }
+        .cell.highlight { box-shadow: inset 0 0 15px rgba(255,255,255,0.4); background: rgba(255,255,255,0.1); }
+        .cell.hint-on { animation: hintFlash 0.5s ease 3; }
+        @keyframes hintFlash { 50% { background: #fff; box-shadow: 0 0 20px #fff; } }
 
-        #stash { display: flex; justify-content: space-around; width: 100%; max-width: 420px; height: 140px; margin-top: auto; padding-bottom: 20px; }
-        .stash-item { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+        /* STASH */
+        #stash { display: flex; justify-content: space-around; width: 100%; max-width: 420px; height: 130px; margin-top: auto; padding-bottom: 20px; }
+        .stash-item { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border-radius: 15px; }
 
-        .shape-container { display: grid; cursor: grab; position: relative; transform: scale(0.8); }
-        .block-unit { width: 32px; height: 32px; border-radius: 7px; border: 1px solid rgba(0,0,0,0.2); }
-
-        /* LỚP PHỦ KHI KÉO - ĐẢM BẢO CHUẨN XÁC */
-        .dragging { 
-            transform: scale(1) !important; 
-            position: fixed !important; 
-            pointer-events: none; 
-            z-index: 9999; 
-            filter: brightness(1.1);
+        /* BLOCKS */
+        .shape-container { display: grid; cursor: grab; position: relative; transition: transform 0.2s; }
+        .block-unit { 
+            width: 32px; height: 32px; border-radius: 6px; 
+            border: 1px solid rgba(0,0,0,0.2); 
+            box-shadow: inset 0 3px 6px rgba(255,255,255,0.3);
         }
+        .dragging { transform: scale(1.05) !important; position: fixed !important; pointer-events: none; z-index: 1000; filter: brightness(1.2); }
 
-        .particle { position: absolute; pointer-events: none; border-radius: 2px; animation: pFly 0.5s ease-out forwards; }
-        @keyframes pFly { 100% { transform: translate(var(--x), var(--y)) rotate(180deg); opacity: 0; } }
+        /* GAME OVER MODAL */
+        #game-over {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;
+            backdrop-filter: blur(10px);
+        }
+        #game-over h2 { font-size: 48px; margin-bottom: 20px; color: #ff3b3b; text-shadow: 0 0 20px #ff3b3b; }
+        .btn { 
+            background: #0099ff; color: white; border: none; padding: 15px 40px; 
+            border-radius: 30px; font-weight: 800; font-size: 18px; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,153,255,0.4);
+        }
+        #hint-btn {
+            position: absolute; bottom: 150px; right: 20px;
+            background: #fbbf24; color: #000; border: none; width: 50px; height: 50px;
+            border-radius: 50%; font-weight: 900; cursor: pointer; box-shadow: 0 5px 15px rgba(251,191,36,0.3);
+        }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <div style="text-align: left;"><div style="font-size: 10px; opacity: 0.5;">BEST</div><div id="high-score">0</div></div>
-        <div><div style="font-size: 10px; opacity: 0.5;">SCORE</div><div id="score-val">0</div></div>
+        <div class="score-item">
+            <span class="label">Best</span>
+            <span id="high-val">0</span>
+        </div>
+        <div class="score-item">
+            <span class="label">Score</span>
+            <span id="score-val">0</span>
+        </div>
     </div>
 
     <div id="game-board"></div>
+
+    <button id="hint-btn">💡</button>
 
     <div id="stash">
         <div class="stash-item" id="s1"></div>
@@ -61,27 +89,42 @@
         <div class="stash-item" id="s3"></div>
     </div>
 
+    <div id="game-over">
+        <h2>THUA RỒI!</h2>
+        <p style="margin-bottom: 20px; opacity: 0.7;">Điểm của bạn:</p>
+        <div id="final-score" style="font-size: 40px; font-weight: 900; margin-bottom: 40px;">0</div>
+        <button class="btn" onclick="location.reload()">CHƠI LẠI</button>
+    </div>
+
 <script>
     const GRID_SIZE = 8;
     const board = document.getElementById('game-board');
     let score = 0;
-    let highScore = localStorage.getItem('LGBank_HS') || 0;
+    let highScore = localStorage.getItem('LGB_BEST') || 0;
     let gridData = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
     let cells = [];
-    let lastMove = Date.now();
+    let isTouch = 'ontouchstart' in window;
 
-    document.getElementById('high-score').innerText = highScore;
+    // AUDIO SYSTEM
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(freq, type, duration) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
 
     const SHAPES = [
-        { data: [[1,1],[1,1]], color: 'var(--c1)' },
-        { data: [[1,1,1,1]], color: 'var(--c2)' },
-        { data: [[1,1,1],[0,1,0]], color: 'var(--c3)' },
-        { data: [[1,1,0],[0,1,1]], color: 'var(--c5)' },
-        { data: [[1,1,1],[1,0,0]], color: 'var(--c4)' }
+        { data: [[1,1],[1,1]], color: 'var(--c1)' }, { data: [[1,1,1,1]], color: 'var(--c2)' },
+        { data: [[1,1,1],[0,1,0]], color: 'var(--c3)' }, { data: [[1,1,1],[1,0,0]], color: 'var(--c4)' },
+        { data: [[1,1,0],[0,1,1]], color: 'var(--c5)' }, { data: [[1,1],[1,0]], color: 'var(--c3)' }
     ];
 
     function init() {
-        board.innerHTML = '';
+        document.getElementById('high-val').innerText = highScore;
         for (let r = 0; r < GRID_SIZE; r++) {
             cells[r] = [];
             for (let c = 0; c < GRID_SIZE; c++) {
@@ -92,7 +135,6 @@
             }
         }
         spawn();
-        setInterval(showHint, 4000);
     }
 
     function createShape(info) {
@@ -100,7 +142,6 @@
         div.className = 'shape-container';
         div.style.gridTemplateColumns = `repeat(${info.data[0].length}, 32px)`;
         div.dataset.info = JSON.stringify(info);
-
         info.data.forEach(row => {
             row.forEach(v => {
                 const b = document.createElement('div');
@@ -108,7 +149,6 @@
                 div.appendChild(b);
             });
         });
-
         div.onmousedown = (e) => startDrag(e, div);
         div.ontouchstart = (e) => startDrag(e.touches[0], div);
         return div;
@@ -116,50 +156,68 @@
 
     let drag = null;
     function startDrag(e, el) {
-        lastMove = Date.now();
-        clearHints();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        playSound(440, 'sine', 0.1);
         const rect = el.getBoundingClientRect();
-        
-        // Cố định vị trí bám: Luôn bám vào ô đầu tiên của khối
         drag = {
-            el: el,
-            info: JSON.parse(el.dataset.info),
-            offsetX: 16, // Một nửa chiều rộng ô (32/2)
-            offsetY: ('ontouchstart' in window) ? 70 : 16 // iPhone nhấc cao, Laptop bám tâm ô đầu
+            el: el, info: JSON.parse(el.dataset.info),
+            offsetX: el.offsetWidth / 2,
+            offsetY: isTouch ? 90 : el.offsetHeight / 2
         };
-        
         el.classList.add('dragging');
-        updateDrag(e);
+        moveDrag(e);
     }
 
-    function updateDrag(e) {
+    function moveDrag(e) {
         if(!drag) return;
         drag.el.style.left = (e.clientX - drag.offsetX) + 'px';
         drag.el.style.top = (e.clientY - drag.offsetY) + 'px';
+        
+        // Highlight preview
+        clearHighlights();
+        const pY = isTouch ? e.clientY - 60 : e.clientY;
+        const target = document.elementFromPoint(e.clientX, pY);
+        if(target && target.className.includes('cell')) {
+            const idx = Array.from(board.children).indexOf(target);
+            const r = Math.floor(idx/8), c = idx%8;
+            if(canPlace(drag.info.data, r, c)) {
+                drag.info.data.forEach((row, i) => row.forEach((v, j) => {
+                    if(v) cells[r+i][c+j].classList.add('highlight');
+                }));
+            }
+        }
     }
 
-    window.onmousemove = (e) => updateDrag(e);
-    window.ontouchmove = (e) => updateDrag(e.touches[0]);
+    window.onmousemove = (e) => moveDrag(e);
+    window.ontouchmove = (e) => moveDrag(e.touches[0]);
 
     window.onmouseup = window.ontouchend = (e) => {
         if(!drag) return;
         const p = e.changedTouches ? e.changedTouches[0] : e;
-        const target = document.elementFromPoint(p.clientX, p.clientY - (('ontouchstart' in window) ? 50 : 0));
+        const pY = isTouch ? p.clientY - 60 : p.clientY;
+        const target = document.elementFromPoint(p.clientX, pY);
         
+        let placed = false;
         if(target && target.className.includes('cell')) {
             const idx = Array.from(board.children).indexOf(target);
             const r = Math.floor(idx/8), c = idx%8;
             if(canPlace(drag.info.data, r, c)) {
                 doPlace(drag.info, r, c);
                 drag.el.remove();
-                checkClear();
+                placed = true;
+                playSound(220, 'square', 0.2);
+                checkBoard();
                 if(!document.querySelector('.shape-container')) spawn();
+                checkLose();
             }
         }
         
-        drag.el.classList.remove('dragging');
-        drag.el.style.position = 'relative';
-        drag.el.style.left = '0'; drag.el.style.top = '0';
+        if(!placed) {
+            drag.el.classList.remove('dragging');
+            drag.el.style.position = 'relative';
+            drag.el.style.left = '0'; drag.el.style.top = '0';
+        }
+        clearHighlights();
         drag = null;
     };
 
@@ -178,69 +236,75 @@
                 if(v) {
                     gridData[r+i][c+j] = info.color;
                     cells[r+i][c+j].style.background = info.color;
-                    cells[r+i][c+j].style.boxShadow = 'inset 0 0 10px rgba(255,255,255,0.3)';
+                    cells[r+i][c+j].style.boxShadow = 'inset 0 0 12px rgba(255,255,255,0.4), 0 0 10px '+info.color;
                 }
             });
         });
     }
 
-    function checkClear() {
+    function checkBoard() {
         let rs = [], cs = [];
         for(let i=0; i<8; i++) {
             if(gridData[i].every(v => v)) rs.push(i);
             if(gridData.every(row => row[i])) cs.push(i);
         }
-        
         if(rs.length + cs.length > 0) {
-            rs.forEach(r => { for(let j=0; j<8; j++) explode(r, j); });
-            cs.forEach(c => { for(let i=0; i<8; i++) explode(i, c); });
-            
-            const p = (rs.length + cs.length) * 100;
-            score += p;
+            playSound(880, 'sine', 0.5);
+            rs.forEach(r => { for(let j=0; j<8; j++) clearCell(r,j); });
+            cs.forEach(c => { for(let i=0; i<8; i++) clearCell(i,c); });
+            score += (rs.length + cs.length) * 100;
             document.getElementById('score-val').innerText = score;
             if(score > highScore) {
                 highScore = score;
-                localStorage.setItem('LGBank_HS', highScore);
-                document.getElementById('high-score').innerText = highScore;
+                localStorage.setItem('LGB_BEST', highScore);
+                document.getElementById('high-val').innerText = highScore;
             }
         }
     }
 
-    function explode(r, c) {
-        const color = gridData[r][c];
+    function clearCell(r, c) {
         gridData[r][c] = null;
-        const cell = cells[r][c];
-        for(let i=0; i<5; i++) {
-            const p = document.createElement('div');
-            p.className = 'particle'; p.style.background = color;
-            p.style.width = p.style.height = '6px';
-            p.style.setProperty('--x', (Math.random()-0.5)*80+'px');
-            p.style.setProperty('--y', (Math.random()-0.5)*80+'px');
-            cell.appendChild(p);
-        }
-        setTimeout(() => { cell.style.background = ''; cell.innerHTML = ''; }, 400);
+        cells[r][c].style.background = '';
+        cells[r][c].style.boxShadow = '';
     }
 
     function spawn() {
         [1,2,3].forEach(i => document.getElementById('s'+i).appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)])));
     }
 
-    function showHint() {
-        if(Date.now() - lastMove < 4000 || drag) return;
+    function checkLose() {
+        const containers = document.querySelectorAll('.shape-container');
+        let possible = false;
+        containers.forEach(c => {
+            const data = JSON.parse(c.dataset.info).data;
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) if(canPlace(data, r, c)) possible = true;
+            }
+        });
+        if(!possible && containers.length > 0) {
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over').style.display = 'flex';
+        }
+    }
+
+    document.getElementById('hint-btn').onclick = () => {
         const s = document.querySelector('.shape-container');
         if(!s) return;
         const data = JSON.parse(s.dataset.info).data;
         for(let r=0; r<8; r++) {
             for(let c=0; c<8; c++) {
                 if(canPlace(data, r, c)) {
-                    data.forEach((row, i) => row.forEach((v, j) => { if(v) cells[r+i][c+j].classList.add('hint'); }));
+                    data.forEach((row, i) => row.forEach((v, j) => {
+                        if(v) cells[r+i][c+j].classList.add('hint-on');
+                    }));
+                    setTimeout(() => cells.flat().forEach(c => c.classList.remove('hint-on')), 1500);
                     return;
                 }
             }
         }
-    }
+    };
 
-    function clearHints() { cells.flat().forEach(c => c.classList.remove('hint')); }
+    function clearHighlights() { cells.flat().forEach(c => c.classList.remove('highlight')); }
 
     init();
 </script>
