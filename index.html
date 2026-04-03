@@ -3,92 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LGBank Block Blast v3.0 - MAX LEVEL</title>
+    <title>LGBank Block Blast v4.0 - ULTIMATE</title>
     <style>
         :root {
-            --bg: #0b1120; --grid: #1e293b; --cell: rgba(255,255,255,0.03); --glow: rgba(56,189,248,0.5);
-            /* Màu khối dạng Neon */
-            --c1: #ef4444; --c2: #3b82f6; --c3: #22c55e; --c4: #eab308; --c5: #a855f7;
-            --font: system-ui, -apple-system, sans-serif;
+            --bg: #050a18; --grid: #131c31; --cell: rgba(255,255,255,0.02);
+            --c1: #ff4d4d; --c2: #00d2ff; --c3: #32ff7e; --c4: #ffaf40; --c5: #7d5fff;
         }
         * { box-sizing: border-box; touch-action: none; user-select: none; margin: 0; padding: 0; }
         body { 
-            background: var(--bg); color: white; font-family: var(--font);
+            background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             height: 100vh; display: flex; flex-direction: column; align-items: center; overflow: hidden;
-            background-image: radial-gradient(circle at 50% 50%, rgba(56,189,248,0.05) 0%, rgba(11,17,32,1) 70%);
         }
 
-        /* SCORE & COMBO */
-        #header { padding: 40px 20px 10px; text-align: center; position: relative; width: 100%; max-width: 400px; }
-        #score-val { font-size: 50px; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px #fbbf24; transition: all 0.2s; }
-        #combo-badge { 
-            position: absolute; right: 20px; top: 50px; background: #ef4444; color: white; 
-            padding: 5px 10px; border-radius: 20px; font-weight: 800; font-size: 12px;
-            display: none; animation: pop 0.3s ease;
-        }
+        /* UI HEADER */
+        #header { padding: 30px 20px 10px; text-align: center; width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .score-box { flex: 1; }
+        #score-label { font-size: 10px; opacity: 0.5; letter-spacing: 2px; }
+        #score-val { font-size: 42px; font-weight: 900; color: #fff; }
+        #high-score { font-size: 14px; color: #fbbf24; opacity: 0.8; }
 
-        /* GRID */
+        /* BOARD */
         #game-board { 
-            display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
-            padding: 10px; background: var(--grid); border-radius: 16px;
-            width: 92vw; max-width: 400px; aspect-ratio: 1; margin: 10px 0;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 0 15px rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .cell { background: var(--cell); border-radius: 5px; transition: background 0.1s; position: relative; }
-        .cell.highlight { background: rgba(56,189,248,0.2) !important; box-shadow: 0 0 10px var(--glow); }
-
-        /* KHO CHỨA KHỐI (STASH) */
-        #stash { 
-            display: flex; justify-content: space-around; align-items: center;
-            width: 100%; max-width: 420px; height: 160px; margin-top: auto; padding: 0 10px 30px;
-            background: rgba(0,0,0,0.2); border-radius: 20px 20px 0 0;
-        }
-        .stash-item { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; position: relative; }
-        
-        /* SHAPES */
-        .shape-container { display: grid; transform: scale(0.65); cursor: grab; position: relative; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .shape-container:hover { transform: scale(0.7) rotate(2deg); }
-        .block-unit { 
-            width: 30px; height: 30px; border-radius: 6px; 
-            border: 1px solid rgba(0,0,0,0.3); 
-            box-shadow: inset 0 2px 5px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.3); 
+            display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; 
+            padding: 12px; background: var(--grid); border-radius: 20px;
+            width: 94vw; max-width: 400px; aspect-ratio: 1;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.05);
             position: relative;
         }
-        .block-unit::after {
-            content: ''; position: absolute; inset: 2px; border-radius: 4px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%);
-        }
-        
-        /* HIỆU ỨNG ĐANG KÉO (MAX LEVEL) */
-        .dragging { 
-            transform: scale(1.05) !important; 
-            opacity: 0.9; position: fixed !important; pointer-events: none; z-index: 9999; 
-            filter: drop-shadow(0 0 15px rgba(56,189,248,0.8));
-            transition: none !important;
-        }
+        .cell { background: var(--cell); border-radius: 6px; position: relative; overflow: hidden; }
+        .cell.hint { animation: hintPulse 1.5s infinite; }
+        @keyframes hintPulse { 0%, 100% { background: var(--cell); } 50% { background: rgba(255,255,255,0.1); } }
 
-        /* BLAST EFFECT */
-        @keyframes blast {
-            0% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(2); }
-            100% { transform: scale(1.5) rotate(15deg); opacity: 0; }
+        /* STASH */
+        #stash { 
+            display: flex; justify-content: space-around; width: 100%; max-width: 420px; 
+            height: 140px; margin-top: auto; padding-bottom: 20px;
         }
-        .blasting { animation: blast 0.4s ease-out forwards; z-index: 10; }
+        .stash-item { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; transform: scale(0.85); transition: 0.3s; }
 
-        @keyframes pop { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        @keyframes scorePop { 0% { transform: scale(1); } 50% { transform: scale(1.1); color: #fff; } 100% { transform: scale(1); } }
-        .score-anim { animation: scorePop 0.3s ease; }
+        /* SHAPES */
+        .shape-container { display: grid; cursor: grab; position: relative; }
+        .block-unit { width: 32px; height: 32px; border-radius: 7px; border: 1px solid rgba(0,0,0,0.2); position: relative; }
+        .block-unit::before { content: ''; position: absolute; top: 15%; left: 15%; width: 30%; height: 20%; background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        .dragging { transform: scale(1.1) !important; position: fixed !important; pointer-events: none; z-index: 1000; filter: brightness(1.2) drop-shadow(0 0 20px rgba(0,0,0,0.5)); }
+
+        /* PARTICLES */
+        .particle { position: absolute; pointer-events: none; border-radius: 50%; animation: particleFly 0.6s ease-out forwards; }
+        @keyframes particleFly { 0% { transform: scale(1); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; } }
+
+        #combo-text { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; font-weight: 900; color: #ff3e3e; pointer-events: none; z-index: 100; text-shadow: 0 0 20px rgba(255,0,0,0.5); display: none; }
     </style>
 </head>
 <body>
 
-    <header id="header">
-        <div style="font-size: 12px; opacity: 0.5; letter-spacing: 3px;">MAX LEVEL</div>
-        <div id="score-val">0</div>
-        <div id="combo-badge">COMBO X2</div>
-    </header>
+    <div id="header">
+        <div class="score-box" style="text-align: left;">
+            <div id="score-label">BEST</div>
+            <div id="high-score">0</div>
+        </div>
+        <div class="score-box">
+            <div id="score-label">SCORE</div>
+            <div id="score-val">0</div>
+        </div>
+    </div>
 
-    <div id="game-board"></div>
+    <div id="game-board">
+        <div id="combo-text">COMBO!</div>
+    </div>
 
     <div id="stash">
         <div class="stash-item" id="s1"></div>
@@ -99,25 +82,25 @@
 <script>
     const GRID_SIZE = 8;
     const board = document.getElementById('game-board');
-    const scoreEl = document.getElementById('score-val');
-    const comboEl = document.getElementById('combo-badge');
-    
     let score = 0;
+    let highScore = localStorage.getItem('blockBlast_highScore') || 0;
     let gridData = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
     let cells = [];
-    let isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    let isTouch = 'ontouchstart' in window;
+    let lastMoveTime = Date.now();
+
+    document.getElementById('high-score').innerText = highScore;
 
     const SHAPES = [
         { data: [[1,1],[1,1]], color: 'var(--c1)' },
         { data: [[1,1,1,1]], color: 'var(--c2)' },
         { data: [[1,1,1],[0,1,0]], color: 'var(--c3)' },
-        { data: [[1,1],[1,0]], color: 'var(--c4)' },
+        { data: [[1,1],[1,1],[1,1]], color: 'var(--c4)' },
         { data: [[1,1,1],[1,0,0]], color: 'var(--c5)' },
-        { data: [[1]], color: '#fff' } // Single block
+        { data: [[1,1,0],[0,1,1]], color: '#ff5e57' }
     ];
 
     function init() {
-        board.innerHTML = '';
         for (let r = 0; r < GRID_SIZE; r++) {
             cells[r] = [];
             for (let c = 0; c < GRID_SIZE; c++) {
@@ -128,127 +111,83 @@
             }
         }
         spawnNewShapes();
+        setInterval(checkHint, 5000); // Gợi ý mỗi 5s nếu không hoạt động
     }
 
-    function createShapeEl(shapeData) {
+    function createShape(info) {
         const container = document.createElement('div');
         container.className = 'shape-container';
-        const cols = shapeData.data[0].length;
-        const rows = shapeData.data.length;
-        container.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
-        container.dataset.info = JSON.stringify(shapeData);
+        container.style.gridTemplateColumns = `repeat(${info.data[0].length}, 32px)`;
+        container.dataset.info = JSON.stringify(info);
 
-        shapeData.data.forEach(row => {
+        info.data.forEach(row => {
             row.forEach(v => {
                 const b = document.createElement('div');
-                if(v) { 
-                    b.className = 'block-unit'; 
-                    b.style.background = shapeData.color; 
-                    b.style.boxShadow = `inset 0 0 10px rgba(255,255,255,0.2), 0 0 10px ${shapeData.color}80`;
-                }
+                if(v) { b.className = 'block-unit'; b.style.background = info.color; b.style.boxShadow = `0 4px 0 ${info.color}aa, inset 0 0 10px rgba(255,255,255,0.2)`; }
                 container.appendChild(b);
             });
         });
 
-        // Hỗ trợ cả Chuột và Cảm ứng
         container.onmousedown = (e) => startDrag(e, container);
         container.ontouchstart = (e) => startDrag(e.touches[0], container);
-        
         return container;
     }
 
     let activeDrag = null;
     function startDrag(e, el) {
-        if(e.button === 2) return; // Không kéo bằng chuột phải
+        lastMoveTime = Date.now();
+        clearHints();
         const rect = el.getBoundingClientRect();
-        
-        // TỰ ĐỘNG XỬ LÝ OFFSET CHUẨN (MAX LEVEL)
-        // Nếu là chuột: offset = 0 (chuột nằm giữa khối)
-        // Nếu là iPhone: offset = 60px (nhấc lên trên ngón tay)
-        const offsetVal = isTouchDevice ? 60 : 0;
-
         activeDrag = {
             el: el,
             info: JSON.parse(el.dataset.info),
-            // Tính toán vị trí tâm khối hình
-            offsetX: (el.offsetWidth * 0.65) / 2, 
-            offsetY: (el.offsetHeight * 0.65) / 2 + offsetVal
+            offsetX: (el.offsetWidth) / 2,
+            offsetY: isTouch ? 80 : (el.offsetHeight / 2)
         };
-        
         el.classList.add('dragging');
-        updateDragPos(e);
-        document.body.style.cursor = 'grabbing';
+        updatePos(e);
     }
 
-    function updateDragPos(e) {
+    function updatePos(e) {
         if(!activeDrag) return;
-        // Di chuyển khối mượt mà
         activeDrag.el.style.left = (e.clientX - activeDrag.offsetX) + 'px';
         activeDrag.el.style.top = (e.clientY - activeDrag.offsetY) + 'px';
-        
-        // Hiệu ứng highlight ô lưới gần nhất
-        clearHighlights();
-        const pointer = isTouchDevice ? {clientX: e.clientX, clientY: e.clientY - 60} : e;
-        const target = document.elementFromPoint(pointer.clientX, pointer.clientY);
-        if(target && target.className.includes('cell')) {
-            const idx = Array.from(board.children).indexOf(target);
-            const r = Math.floor(idx/8), c = idx%8;
-            highlightPlacement(activeDrag.info.data, r, c);
-        }
     }
 
-    window.onmousemove = (e) => { if(activeDrag) updateDragPos(e); };
-    window.ontouchmove = (e) => { if(activeDrag) updateDragPos(e.touches[0]); };
+    window.onmousemove = (e) => { if(activeDrag) updatePos(e); };
+    window.ontouchmove = (e) => { if(activeDrag) updatePos(e.touches[0]); };
 
     window.onmouseup = window.ontouchend = (e) => {
         if(!activeDrag) return;
-        const pointer = e.changedTouches ? e.changedTouches[0] : e;
-        activeDrag.el.classList.remove('dragging');
-        activeDrag.el.style.position = 'relative';
-        activeDrag.el.style.left = '0'; activeDrag.el.style.top = '0';
-        document.body.style.cursor = '';
-        clearHighlights();
-
-        // Điểm thả chuẩn xác
-        const dropPointY = isTouchDevice ? pointer.clientY - 60 : pointer.clientY;
-        const target = document.elementFromPoint(pointer.clientX, dropPointY);
+        const p = e.changedTouches ? e.changedTouches[0] : e;
+        const target = document.elementFromPoint(p.clientX, p.clientY - (isTouch ? 60 : 0));
         
         if(target && target.className.includes('cell')) {
             const idx = Array.from(board.children).indexOf(target);
             const r = Math.floor(idx/8), c = idx%8;
-            
             if(canPlace(activeDrag.info.data, r, c)) {
                 place(activeDrag.info, r, c);
-                activeDrag.el.parentElement.innerHTML = '';
+                activeDrag.el.remove();
                 checkLines();
-                if(!document.querySelectorAll('.shape-container').length) spawnNewShapes();
+                if(document.querySelectorAll('.shape-container').length === 0) spawnNewShapes();
             }
         }
+        
+        activeDrag.el.classList.remove('dragging');
+        activeDrag.el.style.position = 'relative';
+        activeDrag.el.style.left = '0'; activeDrag.el.style.top = '0';
         activeDrag = null;
     };
 
-    function canPlace(shape, r, c) {
-        for(let i=0; i<shape.length; i++) {
-            for(let j=0; j<shape[i].length; j++) {
-                if(shape[i][j]) {
-                    if(r+i >= GRID_SIZE || c+j >= GRID_SIZE || gridData[r+i][c+j]) return false;
+    function canPlace(data, r, c) {
+        for(let i=0; i<data.length; i++) {
+            for(let j=0; j<data[i].length; j++) {
+                if(data[i][j]) {
+                    if(r+i >= 8 || c+j >= 8 || gridData[r+i][c+j]) return false;
                 }
             }
         }
         return true;
-    }
-
-    function highlightPlacement(shape, r, c) {
-        if(!canPlace(shape, r, c)) return;
-        shape.forEach((row, i) => {
-            row.forEach((v, j) => {
-                if(v) cells[r+i][c+j].classList.add('highlight');
-            });
-        });
-    }
-
-    function clearHighlights() {
-        cells.flat().forEach(cell => cell.classList.remove('highlight'));
     }
 
     function place(info, r, c) {
@@ -257,67 +196,88 @@
                 if(v) {
                     gridData[r+i][c+j] = info.color;
                     cells[r+i][c+j].style.background = info.color;
-                    cells[r+i][c+j].style.boxShadow = `inset 0 0 15px rgba(255,255,255,0.3), 0 0 15px ${info.color}`;
-                    cells[r+i][c+j].style.border = '1px solid rgba(255,255,255,0.1)';
+                    cells[r+i][c+j].style.boxShadow = `inset 0 0 15px rgba(255,255,255,0.3)`;
                 }
             });
         });
-        updateScore(10);
+        // Không cộng điểm khi đặt vào (theo yêu cầu)
     }
 
     function checkLines() {
         let rB = [], cB = [];
-        for(let i=0; i<GRID_SIZE; i++) {
+        for(let i=0; i<8; i++) {
             if(gridData[i].every(v => v)) rB.push(i);
-            let fullCol = true;
-            for(let j=0; j<GRID_SIZE; j++) if(!gridData[j][i]) fullCol = false;
-            if(fullCol) cB.push(i);
+            let colFull = true;
+            for(let j=0; j<8; j++) if(!gridData[j][i]) colFull = false;
+            if(colFull) cB.push(i);
         }
 
-        const linesCleared = rB.length + cB.length;
-        if(linesCleared > 0) {
-            rB.forEach(r => { for(let j=0; j<GRID_SIZE; j++) blast(r,j); });
-            cB.forEach(c => { for(let i=0; i<GRID_SIZE; i++) blast(i,c); });
+        if(rB.length + cB.length > 0) {
+            rB.forEach(r => { for(let j=0; j<8; j++) createParticles(r,j); });
+            cB.forEach(c => { for(let i=0; i<8; i++) createParticles(i,c); });
             
-            // Tính điểm Combo (MAX LEVEL)
-            let comboScore = 100 * linesCleared;
-            if(linesCleared > 1) {
-                comboScore *= linesCleared; // Thưởng nổ hũ
-                showCombo(linesCleared);
-                if(isTouchDevice && window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]); // Rung iPhone
-            }
-            updateScore(comboScore);
+            const points = (rB.length + cB.length) * 100 * (rB.length + cB.length);
+            updateScore(points);
+            if(rB.length + cB.length > 1) showCombo();
         }
     }
 
-    function blast(r, c) {
+    function createParticles(r, c) {
+        const color = gridData[r][c];
         gridData[r][c] = null;
         const cell = cells[r][c];
-        cell.classList.add('blasting');
-        setTimeout(() => {
-            cell.className = 'cell';
-            cell.style = ''; // Xóa sạch style màu
-        }, 400);
+        
+        for(let i=0; i<6; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.background = color;
+            p.style.width = p.style.height = Math.random() * 8 + 4 + 'px';
+            p.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
+            p.style.setProperty('--y', (Math.random() - 0.5) * 100 + 'px');
+            cell.appendChild(p);
+        }
+        setTimeout(() => { cell.style.background = ''; cell.style.boxShadow = ''; cell.innerHTML = ''; }, 400);
     }
 
     function updateScore(pts) {
         score += pts;
-        scoreEl.innerText = score;
-        scoreEl.classList.add('score-anim');
-        setTimeout(() => scoreEl.classList.remove('score-anim'), 300);
-    }
-
-    function showCombo(n) {
-        comboEl.innerText = `COMBO X${n}`;
-        comboEl.style.display = 'block';
-        setTimeout(() => comboEl.style.display = 'none', 1000);
+        document.getElementById('score-val').innerText = score;
+        if(score > highScore) {
+            highScore = score;
+            localStorage.setItem('blockBlast_highScore', highScore);
+            document.getElementById('high-score').innerText = highScore;
+        }
     }
 
     function spawnNewShapes() {
         [1,2,3].forEach(i => {
             const slot = document.getElementById('s' + i);
-            slot.appendChild(createShapeEl(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
+            slot.appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
         });
+    }
+
+    function checkHint() {
+        if(Date.now() - lastMoveTime < 5000 || activeDrag) return;
+        const containers = document.querySelectorAll('.shape-container');
+        if(containers.length === 0) return;
+        const data = JSON.parse(containers[0].dataset.info).data;
+        for(let r=0; r<8; r++) {
+            for(let c=0; c<8; c++) {
+                if(canPlace(data, r, c)) {
+                    data.forEach((row, i) => row.forEach((v, j) => {
+                        if(v) cells[r+i][c+j].classList.add('hint');
+                    }));
+                    return;
+                }
+            }
+        }
+    }
+
+    function clearHints() { cells.flat().forEach(c => c.classList.remove('hint')); }
+    function showCombo() { 
+        const ct = document.getElementById('combo-text');
+        ct.style.display = 'block';
+        setTimeout(() => ct.style.display = 'none', 800);
     }
 
     init();
