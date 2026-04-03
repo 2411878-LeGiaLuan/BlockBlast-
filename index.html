@@ -3,52 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast LG v2.2</title>
+    <title>LGBank Block Blast v3.0 - MAX LEVEL</title>
     <style>
         :root {
-            --bg: #0f172a; --grid: #1e293b; --cell: #334155;
-            --c1: #ef4444; --c2: #3b82f6; --c3: #10b981; --c4: #f59e0b; --c5: #8b5cf6;
+            --bg: #0b1120; --grid: #1e293b; --cell: rgba(255,255,255,0.03); --glow: rgba(56,189,248,0.5);
+            /* Màu khối dạng Neon */
+            --c1: #ef4444; --c2: #3b82f6; --c3: #22c55e; --c4: #eab308; --c5: #a855f7;
+            --font: system-ui, -apple-system, sans-serif;
         }
-        * { box-sizing: border-box; touch-action: none; user-select: none; }
+        * { box-sizing: border-box; touch-action: none; user-select: none; margin: 0; padding: 0; }
         body { 
-            margin: 0; padding: 0; background: var(--bg); color: white; 
-            font-family: system-ui, -apple-system, sans-serif;
-            height: 100vh; display: flex; flex-direction: column; align-items: center; 
+            background: var(--bg); color: white; font-family: var(--font);
+            height: 100vh; display: flex; flex-direction: column; align-items: center; overflow: hidden;
+            background-image: radial-gradient(circle at 50% 50%, rgba(56,189,248,0.05) 0%, rgba(11,17,32,1) 70%);
         }
-        #header { padding: 40px 20px 10px; text-align: center; }
-        #score-val { font-size: 44px; font-weight: 800; color: #fbbf24; text-shadow: 0 0 15px rgba(251,191,36,0.3); }
-        
+
+        /* SCORE & COMBO */
+        #header { padding: 40px 20px 10px; text-align: center; position: relative; width: 100%; max-width: 400px; }
+        #score-val { font-size: 50px; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px #fbbf24; transition: all 0.2s; }
+        #combo-badge { 
+            position: absolute; right: 20px; top: 50px; background: #ef4444; color: white; 
+            padding: 5px 10px; border-radius: 20px; font-weight: 800; font-size: 12px;
+            display: none; animation: pop 0.3s ease;
+        }
+
+        /* GRID */
         #game-board { 
             display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
-            padding: 8px; background: var(--grid); border-radius: 12px;
-            width: 90vw; max-width: 400px; aspect-ratio: 1;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            padding: 10px; background: var(--grid); border-radius: 16px;
+            width: 92vw; max-width: 400px; aspect-ratio: 1; margin: 10px 0;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 0 15px rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .cell { background: var(--cell); border-radius: 4px; transition: background 0.2s; }
-        .cell.highlight { background: rgba(255,255,255,0.2); }
+        .cell { background: var(--cell); border-radius: 5px; transition: background 0.1s; position: relative; }
+        .cell.highlight { background: rgba(56,189,248,0.2) !important; box-shadow: 0 0 10px var(--glow); }
 
+        /* KHO CHỨA KHỐI (STASH) */
         #stash { 
             display: flex; justify-content: space-around; align-items: center;
-            width: 100%; max-width: 400px; height: 160px; margin-top: auto; padding-bottom: 30px;
+            width: 100%; max-width: 420px; height: 160px; margin-top: auto; padding: 0 10px 30px;
+            background: rgba(0,0,0,0.2); border-radius: 20px 20px 0 0;
         }
-        .stash-item { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border-radius: 15px; }
+        .stash-item { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; position: relative; }
         
-        .shape-container { display: grid; transform: scale(0.6); cursor: grab; position: relative; }
-        .block-unit { width: 30px; height: 30px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 0 10px rgba(255,255,255,0.2); }
+        /* SHAPES */
+        .shape-container { display: grid; transform: scale(0.65); cursor: grab; position: relative; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .shape-container:hover { transform: scale(0.7) rotate(2deg); }
+        .block-unit { 
+            width: 30px; height: 30px; border-radius: 6px; 
+            border: 1px solid rgba(0,0,0,0.3); 
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.3); 
+            position: relative;
+        }
+        .block-unit::after {
+            content: ''; position: absolute; inset: 2px; border-radius: 4px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%);
+        }
         
+        /* HIỆU ỨNG ĐANG KÉO (MAX LEVEL) */
         .dragging { 
-            transform: scale(1) !important; 
-            opacity: 0.9; position: fixed; pointer-events: none; z-index: 1000; 
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+            transform: scale(1.05) !important; 
+            opacity: 0.9; position: fixed !important; pointer-events: none; z-index: 9999; 
+            filter: drop-shadow(0 0 15px rgba(56,189,248,0.8));
+            transition: none !important;
         }
+
+        /* BLAST EFFECT */
+        @keyframes blast {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(2); }
+            100% { transform: scale(1.5) rotate(15deg); opacity: 0; }
+        }
+        .blasting { animation: blast 0.4s ease-out forwards; z-index: 10; }
+
+        @keyframes pop { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        @keyframes scorePop { 0% { transform: scale(1); } 50% { transform: scale(1.1); color: #fff; } 100% { transform: scale(1); } }
+        .score-anim { animation: scorePop 0.3s ease; }
     </style>
 </head>
 <body>
 
-    <div id="header">
-        <div style="font-size: 14px; opacity: 0.6; letter-spacing: 2px;">BEST SCORE</div>
+    <header id="header">
+        <div style="font-size: 12px; opacity: 0.5; letter-spacing: 3px;">MAX LEVEL</div>
         <div id="score-val">0</div>
-    </div>
+        <div id="combo-badge">COMBO X2</div>
+    </header>
 
     <div id="game-board"></div>
 
@@ -61,16 +99,21 @@
 <script>
     const GRID_SIZE = 8;
     const board = document.getElementById('game-board');
+    const scoreEl = document.getElementById('score-val');
+    const comboEl = document.getElementById('combo-badge');
+    
     let score = 0;
     let gridData = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
     let cells = [];
+    let isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     const SHAPES = [
         { data: [[1,1],[1,1]], color: 'var(--c1)' },
         { data: [[1,1,1,1]], color: 'var(--c2)' },
         { data: [[1,1,1],[0,1,0]], color: 'var(--c3)' },
         { data: [[1,1],[1,0]], color: 'var(--c4)' },
-        { data: [[1,1,1],[1,0,0]], color: 'var(--c5)' }
+        { data: [[1,1,1],[1,0,0]], color: 'var(--c5)' },
+        { data: [[1]], color: '#fff' } // Single block
     ];
 
     function init() {
@@ -87,16 +130,22 @@
         spawnNewShapes();
     }
 
-    function createShape(shapeData) {
+    function createShapeEl(shapeData) {
         const container = document.createElement('div');
         container.className = 'shape-container';
-        container.style.gridTemplateColumns = `repeat(${shapeData.data[0].length}, 30px)`;
+        const cols = shapeData.data[0].length;
+        const rows = shapeData.data.length;
+        container.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
         container.dataset.info = JSON.stringify(shapeData);
 
         shapeData.data.forEach(row => {
             row.forEach(v => {
                 const b = document.createElement('div');
-                if(v) { b.className = 'block-unit'; b.style.background = shapeData.color; }
+                if(v) { 
+                    b.className = 'block-unit'; 
+                    b.style.background = shapeData.color; 
+                    b.style.boxShadow = `inset 0 0 10px rgba(255,255,255,0.2), 0 0 10px ${shapeData.color}80`;
+                }
                 container.appendChild(b);
             });
         });
@@ -110,24 +159,44 @@
 
     let activeDrag = null;
     function startDrag(e, el) {
+        if(e.button === 2) return; // Không kéo bằng chuột phải
         const rect = el.getBoundingClientRect();
+        
+        // TỰ ĐỘNG XỬ LÝ OFFSET CHUẨN (MAX LEVEL)
+        // Nếu là chuột: offset = 0 (chuột nằm giữa khối)
+        // Nếu là iPhone: offset = 60px (nhấc lên trên ngón tay)
+        const offsetVal = isTouchDevice ? 60 : 0;
+
         activeDrag = {
             el: el,
             info: JSON.parse(el.dataset.info),
-            offsetX: 45, 
-            offsetY: 45
+            // Tính toán vị trí tâm khối hình
+            offsetX: (el.offsetWidth * 0.65) / 2, 
+            offsetY: (el.offsetHeight * 0.65) / 2 + offsetVal
         };
+        
         el.classList.add('dragging');
         updateDragPos(e);
+        document.body.style.cursor = 'grabbing';
     }
 
     function updateDragPos(e) {
         if(!activeDrag) return;
+        // Di chuyển khối mượt mà
         activeDrag.el.style.left = (e.clientX - activeDrag.offsetX) + 'px';
-        activeDrag.el.style.top = (e.clientY - activeDrag.offsetY - 50) + 'px';
+        activeDrag.el.style.top = (e.clientY - activeDrag.offsetY) + 'px';
+        
+        // Hiệu ứng highlight ô lưới gần nhất
+        clearHighlights();
+        const pointer = isTouchDevice ? {clientX: e.clientX, clientY: e.clientY - 60} : e;
+        const target = document.elementFromPoint(pointer.clientX, pointer.clientY);
+        if(target && target.className.includes('cell')) {
+            const idx = Array.from(board.children).indexOf(target);
+            const r = Math.floor(idx/8), c = idx%8;
+            highlightPlacement(activeDrag.info.data, r, c);
+        }
     }
 
-    // Sự kiện toàn cục cho di chuyển và thả
     window.onmousemove = (e) => { if(activeDrag) updateDragPos(e); };
     window.ontouchmove = (e) => { if(activeDrag) updateDragPos(e.touches[0]); };
 
@@ -137,9 +206,13 @@
         activeDrag.el.classList.remove('dragging');
         activeDrag.el.style.position = 'relative';
         activeDrag.el.style.left = '0'; activeDrag.el.style.top = '0';
+        document.body.style.cursor = '';
+        clearHighlights();
 
-        // Tìm ô dưới vị trí thả
-        const target = document.elementFromPoint(pointer.clientX, pointer.clientY - 50);
+        // Điểm thả chuẩn xác
+        const dropPointY = isTouchDevice ? pointer.clientY - 60 : pointer.clientY;
+        const target = document.elementFromPoint(pointer.clientX, dropPointY);
+        
         if(target && target.className.includes('cell')) {
             const idx = Array.from(board.children).indexOf(target);
             const r = Math.floor(idx/8), c = idx%8;
@@ -158,11 +231,24 @@
         for(let i=0; i<shape.length; i++) {
             for(let j=0; j<shape[i].length; j++) {
                 if(shape[i][j]) {
-                    if(r+i >= 8 || c+j >= 8 || gridData[r+i][c+j]) return false;
+                    if(r+i >= GRID_SIZE || c+j >= GRID_SIZE || gridData[r+i][c+j]) return false;
                 }
             }
         }
         return true;
+    }
+
+    function highlightPlacement(shape, r, c) {
+        if(!canPlace(shape, r, c)) return;
+        shape.forEach((row, i) => {
+            row.forEach((v, j) => {
+                if(v) cells[r+i][c+j].classList.add('highlight');
+            });
+        });
+    }
+
+    function clearHighlights() {
+        cells.flat().forEach(cell => cell.classList.remove('highlight'));
     }
 
     function place(info, r, c) {
@@ -171,38 +257,66 @@
                 if(v) {
                     gridData[r+i][c+j] = info.color;
                     cells[r+i][c+j].style.background = info.color;
-                    cells[r+i][c+j].style.boxShadow = 'inset 0 0 10px rgba(255,255,255,0.3)';
+                    cells[r+i][c+j].style.boxShadow = `inset 0 0 15px rgba(255,255,255,0.3), 0 0 15px ${info.color}`;
+                    cells[r+i][c+j].style.border = '1px solid rgba(255,255,255,0.1)';
                 }
             });
         });
-        score += 10;
-        document.getElementById('score-val').innerText = score;
+        updateScore(10);
     }
 
     function checkLines() {
         let rB = [], cB = [];
-        for(let i=0; i<8; i++) {
+        for(let i=0; i<GRID_SIZE; i++) {
             if(gridData[i].every(v => v)) rB.push(i);
             let fullCol = true;
-            for(let j=0; j<8; j++) if(!gridData[j][i]) fullCol = false;
+            for(let j=0; j<GRID_SIZE; j++) if(!gridData[j][i]) fullCol = false;
             if(fullCol) cB.push(i);
         }
-        rB.forEach(r => { for(let j=0; j<8; j++) clear(r,j); });
-        cB.forEach(c => { for(let i=0; i<8; i++) clear(i,c); });
-        if(rB.length || cB.length) score += 100 * (rB.length + cB.length);
-        document.getElementById('score-val').innerText = score;
+
+        const linesCleared = rB.length + cB.length;
+        if(linesCleared > 0) {
+            rB.forEach(r => { for(let j=0; j<GRID_SIZE; j++) blast(r,j); });
+            cB.forEach(c => { for(let i=0; i<GRID_SIZE; i++) blast(i,c); });
+            
+            // Tính điểm Combo (MAX LEVEL)
+            let comboScore = 100 * linesCleared;
+            if(linesCleared > 1) {
+                comboScore *= linesCleared; // Thưởng nổ hũ
+                showCombo(linesCleared);
+                if(isTouchDevice && window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]); // Rung iPhone
+            }
+            updateScore(comboScore);
+        }
     }
 
-    function clear(r, c) {
+    function blast(r, c) {
         gridData[r][c] = null;
-        cells[r][c].style.background = '';
-        cells[r][c].style.boxShadow = '';
+        const cell = cells[r][c];
+        cell.classList.add('blasting');
+        setTimeout(() => {
+            cell.className = 'cell';
+            cell.style = ''; // Xóa sạch style màu
+        }, 400);
+    }
+
+    function updateScore(pts) {
+        score += pts;
+        scoreEl.innerText = score;
+        scoreEl.classList.add('score-anim');
+        setTimeout(() => scoreEl.classList.remove('score-anim'), 300);
+    }
+
+    function showCombo(n) {
+        comboEl.innerText = `COMBO X${n}`;
+        comboEl.style.display = 'block';
+        setTimeout(() => comboEl.style.display = 'none', 1000);
     }
 
     function spawnNewShapes() {
         [1,2,3].forEach(i => {
             const slot = document.getElementById('s' + i);
-            slot.appendChild(createShape(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
+            slot.appendChild(createShapeEl(SHAPES[Math.floor(Math.random()*SHAPES.length)]));
         });
     }
 
